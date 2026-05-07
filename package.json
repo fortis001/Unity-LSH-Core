@@ -1,0 +1,7 @@
+{
+  "name": "com.lsh.core",
+  "version": "1.0.0",
+  "displayName": "LSH Core",
+  "description": "Reusable core systems for Unity projects",
+  "unity": "6000.0"
+}
