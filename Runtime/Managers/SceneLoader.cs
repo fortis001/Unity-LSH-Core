@@ -20,14 +20,17 @@ namespace LSH.Core
 
         private void Start()
         {
-            if (string.IsNullOrEmpty(TargetSceneName))
+            string targetSceneName = TargetSceneName;
+            TargetSceneName = null;
+
+            if (string.IsNullOrEmpty(targetSceneName))
             {
-                SceneManager.LoadScene(SceneName.Title);
+                SceneReference fallbackScene = TransitionManager.Instance.FallbackScene;
+                SceneManager.LoadScene(fallbackScene);
                 return;
             }
 
-            StartCoroutine(LoadSceneAsync(TargetSceneName));
-
+            StartCoroutine(LoadSceneAsync(targetSceneName));
         }
 
         private IEnumerator LoadSceneAsync(string sceneName)

@@ -6,12 +6,18 @@ using UnityEngine.SceneManagement;
 
 namespace LSH.Core
 {
-    public class AppInitializer : MonoBehaviour
+    public class AppBootstrapper : MonoBehaviour
     {
         [SerializeField] private List<MonoBehaviour> _managerObjects;
+        [SerializeField] private CoreSceneSettings _sceneSettings;
+        [SerializeField] private TransitionManager _transitionManager;
 
         private IEnumerator Start()
         {
+            _transitionManager.Configure(
+                _sceneSettings.LoadingScene,
+                _sceneSettings.FallbackScene);
+
             foreach (var obj in _managerObjects)
             {
                 if (obj is IBootable manager)
@@ -27,7 +33,9 @@ namespace LSH.Core
 
         private void FinishInitialization()
         {
-            SceneManager.LoadScene(SceneName.Title);
+
+            SceneReference targetScene = _sceneSettings.EntryCompleteScene;
+            SceneManager.LoadScene(targetScene);
         }
     }
 }

@@ -14,22 +14,33 @@ namespace LSH.Core
         [Header("Settings")]
         [SerializeField] private float _fadeDuration = 0.5f;
 
-        private string _loadingSceneName = SceneName.Loading;
+        private SceneReference _loadingScene;
+        private SceneReference _fallbackScene;
 
         private bool _isTransitioning = false;
         private string _targetSceneName;
         private Coroutine _fadeCoroutine;
+
+        public SceneReference FallbackScene => _fallbackScene;
 
         protected override void Awake()
         {
             base.Awake();
         }
 
+        public void Configure(SceneReference loadingScene, SceneReference fallbackScene)
+        {
+            _loadingScene = loadingScene;
+            _fallbackScene = fallbackScene;
+        }
+
         public void Init()
         {
-            if (_fadePanel == null) return;
-            _fadePanel.alpha = 0f;
-            _fadePanel.blocksRaycasts = false;
+            if (_fadePanel != null)
+            {
+                _fadePanel.alpha = 0f;
+                _fadePanel.blocksRaycasts = false;
+            }
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneLoader.OnLoadingCompleted += HandleLoadingCompleted;
@@ -40,13 +51,19 @@ namespace LSH.Core
         /// </summary>
         /// <param name="targetScene">이동할 씬 이름</param>
         /// <param name="useLoadingScene">로딩 씬 사용 여부 (기본값: true)</param>
-        public void LoadNextScene(string targetScene, bool useLoadingScene = true)
+        public void LoadNextScene(SceneReference targetScene, bool useLoadingScene = true)
         {
             if (_isTransitioning) return;
 
+            if (targetScene.IsEmpty)
+            {
+                Debug.LogError("Target scene is empty.", this);
+                return;
+            }
+
             _isTransitioning = true;
-            _targetSceneName = targetScene;
-            SceneLoader.TargetSceneName = targetScene;
+            _targetSceneName = targetScene.Value;
+            SceneLoader.TargetSceneName = targetScene.Value;
 
             if (useLoadingScene)
                 StartCoroutine(SequenceWithLoading());
@@ -60,7 +77,7 @@ namespace LSH.Core
         {
             yield return StartCoroutine(Fade(1f));
 
-            SceneManager.LoadScene(_loadingSceneName);
+            SceneManager.LoadScene(_loadingScene);
         }
 
         private IEnumerator SequenceDirect()
@@ -89,7 +106,7 @@ namespace LSH.Core
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == _loadingSceneName || scene.name == _targetSceneName)
+            if (scene.name == _loadingScene || scene.name == _targetSceneName)
             {
                 StartCoroutine(Fade(0f));
             }
