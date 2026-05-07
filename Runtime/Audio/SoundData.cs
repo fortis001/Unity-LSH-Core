@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LSH.Core
 {
-    [CreateAssetMenu(fileName = "SoundData", menuName = "Core/SoundData")]
+    [CreateAssetMenu(fileName = "SoundData", menuName = "LSH/Core/SoundData")]
     public class SoundData : ScriptableObject
     {
         [Serializable]
