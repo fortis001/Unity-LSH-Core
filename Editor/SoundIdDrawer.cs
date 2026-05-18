@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -11,6 +12,16 @@ namespace LSH.Core.Editor
     [CustomPropertyDrawer(typeof(SoundId))]
     public class SoundIdDrawer : PropertyDrawer
     {
+        private sealed class SoundIdDropdownCache
+        {
+            public Type EnumType;
+            public string[] Names;
+            public int[] Ids;
+            public string[] DisplayOptions;
+        }
+
+        private static readonly Dictionary<SoundType, SoundIdDropdownCache> _cacheByType = new();
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             SerializedProperty idProperty = property.FindPropertyRelative("_id");
@@ -24,18 +35,18 @@ namespace LSH.Core.Editor
                 return;
             }
 
-            Type enumType = FindSoundEnumType(type.Value);
+            SoundIdDropdownCache cache = GetOrCreateCache(type.Value);
 
-            if (enumType == null)
+            if (cache == null || cache.EnumType == null)
             {
                 EditorGUI.HelpBox(
                     position,
-                    $"No enum found with [SoundIdEnum(SoundKind.{type.Value})].",
+                    $"No enum found with [SoundIdEnum({type.Value})].",
                     MessageType.Warning);
                 return;
             }
 
-            DrawEnumDropdown(position, label, enumType, idProperty, nameProperty);
+            DrawEnumDropdown(position, label, cache, idProperty, nameProperty);
         }
 
         private SoundType? GetSoundKind()
@@ -46,54 +57,76 @@ namespace LSH.Core.Editor
             return attribute?.Type;
         }
 
-        private static void DrawEnumDropdown(
-            Rect position,
-            GUIContent label,
-            Type enumType,
-            SerializedProperty idProperty,
-            SerializedProperty nameProperty)
+        private static SoundIdDropdownCache GetOrCreateCache(SoundType soundType)
         {
+            if (_cacheByType.TryGetValue(soundType, out SoundIdDropdownCache cache))
+                return cache;
+
+            Type enumType = FindSoundEnumType(soundType);
+
+            if (enumType == null)
+                return null;
+
             string[] names = Enum.GetNames(enumType);
             Array values = Enum.GetValues(enumType);
 
-            string[] displayOptions = names
-                .Select((name, index) =>
-                {
-                    int id = Convert.ToInt32(values.GetValue(index));
-                    return $"{id} : {name}";
-                })
-                .ToArray();
-
-            int currentIndex = -1;
+            int[] ids = new int[values.Length];
+            string[] displayOptions = new string[values.Length];
 
             for (int i = 0; i < values.Length; i++)
             {
                 int id = Convert.ToInt32(values.GetValue(i));
-                string name = names[i];
 
-                if (idProperty.intValue == id && nameProperty.stringValue == name)
-                {
-                    currentIndex = i;
-                    break;
-                }
+                ids[i] = id;
+                displayOptions[i] = $"{id} : {names[i]}";
             }
 
-            if (currentIndex < 0)
+            cache = new SoundIdDropdownCache
             {
-                currentIndex = 0;
-            }
+                EnumType = enumType,
+                Names = names,
+                Ids = ids,
+                DisplayOptions = displayOptions
+            };
+
+            _cacheByType.Add(soundType, cache);
+            return cache;
+        }
+
+        private static void DrawEnumDropdown(
+            Rect position,
+            GUIContent label,
+            SoundIdDropdownCache cache,
+            SerializedProperty idProperty,
+            SerializedProperty nameProperty)
+        {
+            int currentIndex = GetCurrentIndex(cache, idProperty, nameProperty);
 
             int selectedIndex = EditorGUI.Popup(
                 position,
                 label.text,
                 currentIndex,
-                displayOptions);
+                cache.DisplayOptions);
 
-            int selectedId = Convert.ToInt32(values.GetValue(selectedIndex));
-            string selectedName = names[selectedIndex];
+            idProperty.intValue = cache.Ids[selectedIndex];
+            nameProperty.stringValue = cache.Names[selectedIndex];
+        }
 
-            idProperty.intValue = selectedId;
-            nameProperty.stringValue = selectedName;
+        private static int GetCurrentIndex(
+            SoundIdDropdownCache cache,
+            SerializedProperty idProperty,
+            SerializedProperty nameProperty)
+        {
+            for (int i = 0; i < cache.Ids.Length; i++)
+            {
+                if (idProperty.intValue == cache.Ids[i] &&
+                    nameProperty.stringValue == cache.Names[i])
+                {
+                    return i;
+                }
+            }
+
+            return 0;
         }
 
         private static void DrawFallback(
@@ -120,15 +153,35 @@ namespace LSH.Core.Editor
 
         private static Type FindSoundEnumType(SoundType kind)
         {
-            return AppDomain.CurrentDomain
-                .GetAssemblies()
-                .Where(assembly => !assembly.IsDynamic)
-                .SelectMany(GetTypesSafely)
-                .Where(type =>
-                    type.IsEnum &&
-                    type.GetCustomAttribute<SoundIdEnumAttribute>()?.Type == kind)
-                .OrderBy(type => type.FullName)
-                .FirstOrDefault();
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly.IsDynamic)
+                    continue;
+
+                Type[] types = GetTypesSafely(assembly);
+
+                for (int i = 0; i < types.Length; i++)
+                {
+                    Type type = types[i];
+
+                    if (type == null)
+                        continue;
+
+                    if (!type.IsEnum)
+                        continue;
+
+                    SoundIdEnumAttribute attribute =
+                        type.GetCustomAttribute<SoundIdEnumAttribute>();
+
+                    if (attribute == null)
+                        continue;
+
+                    if (attribute.Type == kind)
+                        return type;
+                }
+            }
+
+            return null;
         }
 
         private static Type[] GetTypesSafely(Assembly assembly)
