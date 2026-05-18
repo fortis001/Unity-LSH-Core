@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LSH.Core.SoundData;
 
 namespace LSH.Core
 {
@@ -12,8 +13,14 @@ namespace LSH.Core
         [SerializeField] private AudioSource _sfxSource;
         [SerializeField] private AudioSource _bgmSource;
 
-        private readonly Dictionary<int, AudioClip> _sfxById = new();
-        private readonly Dictionary<int, AudioClip> _bgmById = new();
+        [Header("Volume Setting")]
+        [Range (0f, 1f)]
+        [SerializeField] private float _bgmVolume = 1f;
+        [Range(0f, 1f)]
+        [SerializeField] private float _sfxVolume = 1f;
+
+        private readonly Dictionary<int, SFXEntry> _sfxById = new();
+        private readonly Dictionary<int, BGMEntry> _bgmById = new();
 
         public void Init()
         {
@@ -22,6 +29,9 @@ namespace LSH.Core
                 Debug.LogError("SoundData가 할당되지 않았습니다!", this);
                 return;
             }
+
+            _bgmSource.volume = _bgmVolume;
+            _sfxSource.volume = _sfxVolume;
 
             _sfxById.Clear();
             _bgmById.Clear();
@@ -38,7 +48,7 @@ namespace LSH.Core
                         this);
                 }
 
-                _sfxById[entry.id.Id] = entry.clip;
+                _sfxById[entry.id.Id] = entry;
             }
 
             foreach (var entry in _soundData.bgmList)
@@ -53,7 +63,7 @@ namespace LSH.Core
                         this);
                 }
 
-                _bgmById[entry.id.Id] = entry.clip;
+                _bgmById[entry.id.Id] = entry;
             }
         }
 
@@ -70,13 +80,13 @@ namespace LSH.Core
 
         public void PlaySFX(int id)
         {
-            if (!_sfxById.TryGetValue(id, out AudioClip clip))
+            if (!_sfxById.TryGetValue(id, out SFXEntry entry))
             {
                 Debug.LogWarning($"SFX not found. id: {id}", this);
                 return;
             }
 
-            PlaySFXClip(clip);
+            PlaySFXClip(entry);
         }
 
         public void PlaySFX<TEnum>(TEnum id)
@@ -101,13 +111,13 @@ namespace LSH.Core
 
         public void PlayBGM(int id)
         {
-            if (!_bgmById.TryGetValue(id, out AudioClip clip))
+            if (!_bgmById.TryGetValue(id, out BGMEntry entry))
             {
                 Debug.LogWarning($"BGM not found. id: {id}", this);
                 return;
             }
 
-            PlayBGMClip(clip);
+            PlayBGMClip(entry);
         }
 
         public void PlayBGM<TEnum>(TEnum id)
@@ -138,15 +148,15 @@ namespace LSH.Core
             if (attribute.Type != expectedKind)
             {
                 Debug.LogError(
-                    $"{enumType.Name}은 SoundKind.{attribute.Type} 타입인데, " +
-                    $"SoundKind.{expectedKind}로 재생하려고 했습니다.");
+                    $"{enumType.Name} => SoundKind.{attribute.Type}" +
+                    $"You tried as SoundKind.{expectedKind}");
                 return false;
             }
 
             return true;
         }
 
-        private void PlaySFXClip(AudioClip clip)
+        private void PlaySFXClip(SFXEntry entry)
         {
             if (_sfxSource == null)
             {
@@ -154,10 +164,13 @@ namespace LSH.Core
                 return;
             }
 
+            AudioClip clip = entry.clip;
+
+            _sfxSource.volume = _sfxVolume * entry.volume;
             _sfxSource.PlayOneShot(clip);
         }
 
-        private void PlayBGMClip(AudioClip clip)
+        private void PlayBGMClip(BGMEntry entry)
         {
             if (_bgmSource == null)
             {
@@ -165,10 +178,13 @@ namespace LSH.Core
                 return;
             }
 
+            AudioClip clip = entry.clip;
+
             if (_bgmSource.clip == clip && _bgmSource.isPlaying)
                 return;
 
             _bgmSource.clip = clip;
+            _bgmSource.volume = _bgmVolume * entry.volume;
             _bgmSource.loop = true;
             _bgmSource.Play();
         }

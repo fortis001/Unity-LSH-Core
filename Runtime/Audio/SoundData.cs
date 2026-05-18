@@ -14,6 +14,9 @@ namespace LSH.Core
             public SoundId id;
 
             public AudioClip clip;
+
+            [Range(0f, 1f)]
+            public float volume;
         }
 
         [Serializable]
@@ -23,6 +26,9 @@ namespace LSH.Core
             public SoundId id;
 
             public AudioClip clip;
+
+            [Range(0f, 1f)]
+            public float volume;
         }
 
         public List<SFXEntry> sfxList = new();
