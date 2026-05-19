@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 namespace LSH.Core
 {
-    public class TransitionManager : Singleton<TransitionManager>, IBootable
+    public class TransitionManager : Singleton<TransitionManager>, IBootableWithContext
     {
 
         [Header("UI References")]
@@ -28,14 +28,11 @@ namespace LSH.Core
             base.Awake();
         }
 
-        public void Configure(SceneReference loadingScene, SceneReference fallbackScene)
+        public void Init(ICoreBootstrapContext context)
         {
-            _loadingScene = loadingScene;
-            _fallbackScene = fallbackScene;
-        }
+            _loadingScene = context.SceneSettings.LoadingScene;
+            _fallbackScene = context.SceneSettings.FallbackScene;
 
-        public void Init()
-        {
             if (_fadePanel != null)
             {
                 _fadePanel.alpha = 0f;
@@ -45,6 +42,7 @@ namespace LSH.Core
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneLoader.OnLoadingCompleted += HandleLoadingCompleted;
         }
+
 
         /// <summary>
         /// 씬 전환 통합 메서드
