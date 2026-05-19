@@ -9,7 +9,6 @@ namespace LSH.Core
     public class AppBootstrapper : MonoBehaviour
     {
         [SerializeField] private List<MonoBehaviour> _managerObjects;
-        [SerializeField] private TransitionManager _transitionManager;
         [SerializeField] private MonoBehaviour _contextObject;
 
         private ICoreBootstrapContext _context;
