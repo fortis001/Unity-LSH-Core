@@ -272,7 +272,15 @@ Managers
 
 ---
 
-## 13. Build Settings 확인
+## 13. SceneLoader 배치
+
+99_LoadingScene에 `SceneLoader` 오브젝트를 생성하고 `SceneLoader` 컴포넌트를 부착합니다.
+
+`ProgressBar`와 `ProgressText`는 비워두어도 동작하지만, 동작 진행도를 나타내고 싶을 때 연결합니다.
+
+---
+
+## 14. Build Settings 확인
 
 Unity의 `Build Settings`에 다음 씬을 등록합니다.
 
@@ -294,7 +302,7 @@ Unity의 `Build Settings`에 다음 씬을 등록합니다.
 
 ---
 
-## 14. 기본 실행 흐름
+## 15. 기본 실행 흐름
 
 기본 실행 흐름은 다음과 같습니다.
 
@@ -327,6 +335,7 @@ Unity의 `Build Settings`에 다음 씬을 등록합니다.
 [ ] TransitionManager에 CanvasGroup을 연결했는가?
 [ ] FadePanel이 화면 전체를 덮도록 설정했는가?
 [ ] AppBootstrapper에 Context와 Managers를 연결했는가?
+[ ] 99_Loading 씬에 SceneLoader를 생성했는가?
 [ ] Build Settings에 씬을 등록했는가?
 [ ] 00_Entry 씬이 빌드 인덱스 0번인가?
 ```
