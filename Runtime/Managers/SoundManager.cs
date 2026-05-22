@@ -191,19 +191,19 @@ namespace LSH.Core
 
         public void StopBGM()
         {
-            if (_bgmSource != null) return;
+            if (_bgmSource == null) return;
             _bgmSource.Stop();
         }
 
         public void PauseBGM()
         {
-            if (_bgmSource != null) return;
+            if (_bgmSource == null) return;
             _bgmSource.Pause();
         }
 
         public void ResumeBGM()
         {
-            if (_bgmSource != null) return;
+            if (_bgmSource == null) return;
             _bgmSource.UnPause();
         }
     }

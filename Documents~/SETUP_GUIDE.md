@@ -229,12 +229,15 @@ SFX Source : SFX Source의 AudioSource
 ```txt
 TransitionManager
 └─ FadeCanvasGroup
-   └─ FadePanel
+   └─ Canvas
+      └─ FadePanel
 ```
 
 `FadeCanvasGroup` 오브젝트에는 `CanvasGroup` 컴포넌트를 부착합니다.
 
 `FadeCanvasGroup` 하위에 `Image` 오브젝트를 생성하고, 전체 화면을 덮을 수 있도록 크기를 충분히 크게 설정합니다.
+
+`Canvas`의 `Sort Order`를 충분히 높게 설정합니다.
 
 예시:
 
