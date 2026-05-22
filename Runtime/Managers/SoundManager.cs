@@ -188,5 +188,23 @@ namespace LSH.Core
             _bgmSource.loop = true;
             _bgmSource.Play();
         }
+
+        public void StopBGM()
+        {
+            if (_bgmSource != null) return;
+            _bgmSource.Stop();
+        }
+
+        public void PauseBGM()
+        {
+            if (_bgmSource != null) return;
+            _bgmSource.Pause();
+        }
+
+        public void ResumeBGM()
+        {
+            if (_bgmSource != null) return;
+            _bgmSource.UnPause();
+        }
     }
 }
