@@ -6,6 +6,8 @@ namespace LSH.Core
 {
     public class TimeManager : Singleton<TimeManager>, IBootableWithContext
     {
+        [SerializeField] private float _maxUnscaledDeltaTime = 0.1f;
+
         private readonly Dictionary<TimeChannelReference, TimeChannel> _channels = new();
 
         public event Action<TimeChannelReference> OnPaused;
@@ -14,7 +16,9 @@ namespace LSH.Core
 
         private void Update()
         {
-            float unscaledDeltaTime = Time.unscaledDeltaTime;
+            float unscaledDeltaTime = Mathf.Min(
+                Time.unscaledDeltaTime,
+                _maxUnscaledDeltaTime);
 
             foreach (TimeChannel channel in _channels.Values)
             {

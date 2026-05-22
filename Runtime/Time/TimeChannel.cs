@@ -1,5 +1,3 @@
-
-
 namespace LSH.Core
 {
     public class TimeChannel
@@ -8,9 +6,24 @@ namespace LSH.Core
         public float DeltaTime { get; private set; }
         public bool IsPaused { get; private set; }
 
+        private bool _skipNextTick;
+
         public void Tick(float unscaledDeltaTime)
         {
-            DeltaTime = IsPaused ? 0f : unscaledDeltaTime;
+            if (_skipNextTick)
+            {
+                DeltaTime = 0f;
+                _skipNextTick = false;
+                return;
+            }
+
+            if (IsPaused)
+            {
+                DeltaTime = 0f;
+                return;
+            }
+
+            DeltaTime = unscaledDeltaTime;
             Time += DeltaTime;
         }
 
@@ -23,6 +36,8 @@ namespace LSH.Core
         public void Resume()
         {
             IsPaused = false;
+            DeltaTime = 0f;
+            _skipNextTick = true;
         }
 
         public void Reset()
@@ -30,6 +45,7 @@ namespace LSH.Core
             Time = 0f;
             DeltaTime = 0f;
             IsPaused = false;
+            _skipNextTick = true;
         }
     }
 }
