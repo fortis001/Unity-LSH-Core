@@ -166,8 +166,8 @@ namespace LSH.Core
 
             AudioClip clip = entry.clip;
 
-            _sfxSource.volume = _sfxVolume * entry.volume;
-            _sfxSource.PlayOneShot(clip);
+            float volume = _sfxVolume * entry.volume;
+            _sfxSource.PlayOneShot(clip, volume);
         }
 
         private void PlayBGMClip(BGMEntry entry)
