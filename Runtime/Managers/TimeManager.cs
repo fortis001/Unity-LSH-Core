@@ -7,6 +7,7 @@ namespace LSH.Core
     public class TimeManager : Singleton<TimeManager>, IBootableWithContext
     {
         [SerializeField] private float _maxUnscaledDeltaTime = 0.1f;
+        [SerializeField] private float _maxUnscaledFixedDeltaTime = 0.1f;
 
         private readonly Dictionary<TimeChannelReference, TimeChannel> _channels = new();
 
@@ -23,6 +24,17 @@ namespace LSH.Core
             foreach (TimeChannel channel in _channels.Values)
             {
                 channel.Tick(unscaledDeltaTime);
+            }
+        }
+        private void FixedUpdate()
+        {
+            float unscaledFixedDeltaTime = Mathf.Min(
+                Time.fixedUnscaledDeltaTime,
+                _maxUnscaledFixedDeltaTime);
+
+            foreach (TimeChannel channel in _channels.Values)
+            {
+                channel.FixedTick(unscaledFixedDeltaTime);
             }
         }
 
@@ -84,6 +96,17 @@ namespace LSH.Core
         {
             TimeChannel channel = GetChannel(channelName);
             return channel != null ? channel.DeltaTime : 0f;
+        }
+        public float GetFixedTime(TimeChannelReference channelName)
+        {
+            TimeChannel channel = GetChannel(channelName);
+            return channel != null ? channel.FixedTime : 0f;
+        }
+
+        public float GetFixedDeltaTime(TimeChannelReference channelName)
+        {
+            TimeChannel channel = GetChannel(channelName);
+            return channel != null ? channel.FixedDeltaTime : 0f;
         }
 
         public bool IsPaused(TimeChannelReference channelName)

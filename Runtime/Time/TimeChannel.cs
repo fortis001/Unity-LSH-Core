@@ -4,9 +4,12 @@ namespace LSH.Core
     {
         public float Time { get; private set; }
         public float DeltaTime { get; private set; }
+        public float FixedTime { get; private set; }
+        public float FixedDeltaTime { get; private set; }
         public bool IsPaused { get; private set; }
 
         private bool _skipNextTick;
+        private bool _skipNextFixedTick;
 
         public void Tick(float unscaledDeltaTime)
         {
@@ -27,6 +30,25 @@ namespace LSH.Core
             Time += DeltaTime;
         }
 
+        public void FixedTick(float unscaledFixedDeltaTime)
+        {
+            if (_skipNextFixedTick)
+            {
+                FixedDeltaTime = 0f;
+                _skipNextFixedTick = false;
+                return;
+            }
+
+            if (IsPaused)
+            {
+                FixedDeltaTime = 0f;
+                return;
+            }
+
+            FixedDeltaTime = unscaledFixedDeltaTime;
+            FixedTime += FixedDeltaTime;
+        }
+
         public void Pause()
         {
             IsPaused = true;
@@ -38,6 +60,7 @@ namespace LSH.Core
             IsPaused = false;
             DeltaTime = 0f;
             _skipNextTick = true;
+            _skipNextFixedTick = true;
         }
 
         public void Reset()
@@ -46,6 +69,7 @@ namespace LSH.Core
             DeltaTime = 0f;
             IsPaused = false;
             _skipNextTick = true;
+            _skipNextFixedTick = true;
         }
     }
 }
