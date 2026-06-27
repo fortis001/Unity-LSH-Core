@@ -4,9 +4,9 @@ using UnityEngine;
 namespace LSH.Core
 {
     [Serializable]
-    public readonly struct TimeChannelReference : IEquatable<TimeChannelReference>
+    public struct TimeChannelReference : IEquatable<TimeChannelReference>
     {
-        [SerializeField] private readonly string _value;
+        [SerializeField] private string _value;
 
         public string Value => _value;
         public bool IsEmpty => string.IsNullOrWhiteSpace(_value);

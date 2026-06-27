@@ -67,6 +67,8 @@ namespace LSH.Core
         {
             Time = 0f;
             DeltaTime = 0f;
+            FixedTime = 0f;
+            FixedDeltaTime = 0f;
             IsPaused = false;
             _skipNextTick = true;
             _skipNextFixedTick = true;
