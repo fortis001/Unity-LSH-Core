@@ -18,6 +18,7 @@ namespace LSH.Core.Editor
             public string[] Names;
             public int[] Ids;
             public string[] DisplayOptions;
+            public string Error;
         }
 
         private static readonly Dictionary<SoundType, SoundIdDropdownCache> _cacheByType = new();
@@ -37,12 +38,12 @@ namespace LSH.Core.Editor
 
             SoundIdDropdownCache cache = GetOrCreateCache(type.Value);
 
-            if (cache == null || cache.EnumType == null)
+            if (cache == null || !string.IsNullOrEmpty(cache.Error))
             {
                 EditorGUI.HelpBox(
                     position,
-                    $"No enum found with [SoundIdEnum({type.Value})].",
-                    MessageType.Warning);
+                    cache?.Error ?? $"No enum found with [SoundIdEnum({type.Value})].",
+                    MessageType.Error);
                 return;
             }
 
@@ -62,20 +63,53 @@ namespace LSH.Core.Editor
             if (_cacheByType.TryGetValue(soundType, out SoundIdDropdownCache cache))
                 return cache;
 
-            Type enumType = FindSoundEnumType(soundType);
+            Type[] enumTypes = FindSoundEnumTypes(soundType);
 
-            if (enumType == null)
-                return null;
+            if (enumTypes.Length == 0)
+            {
+                return new SoundIdDropdownCache
+                {
+                    Error = $"No enum found with [SoundIdEnum({soundType})]."
+                };
+            }
+
+            if (enumTypes.Length > 1)
+            {
+                return new SoundIdDropdownCache
+                {
+                    Error = $"Multiple enums use [SoundIdEnum({soundType})]: " +
+                            string.Join(", ", enumTypes.Select(type => type.FullName))
+                };
+            }
+
+            Type enumType = enumTypes[0];
 
             string[] names = Enum.GetNames(enumType);
             Array values = Enum.GetValues(enumType);
 
+            if (values.Length == 0)
+            {
+                return new SoundIdDropdownCache
+                {
+                    Error = $"{enumType.FullName} does not define any sound IDs."
+                };
+            }
+
             int[] ids = new int[values.Length];
             string[] displayOptions = new string[values.Length];
+            HashSet<int> uniqueIds = new();
 
             for (int i = 0; i < values.Length; i++)
             {
                 int id = Convert.ToInt32(values.GetValue(i));
+
+                if (!uniqueIds.Add(id))
+                {
+                    return new SoundIdDropdownCache
+                    {
+                        Error = $"{enumType.FullName} contains duplicate sound ID {id}."
+                    };
+                }
 
                 ids[i] = id;
                 displayOptions[i] = $"{id} : {names[i]}";
@@ -89,7 +123,7 @@ namespace LSH.Core.Editor
                 DisplayOptions = displayOptions
             };
 
-            _cacheByType.Add(soundType, cache);
+            _cacheByType[soundType] = cache;
             return cache;
         }
 
@@ -107,6 +141,9 @@ namespace LSH.Core.Editor
                 label.text,
                 currentIndex,
                 cache.DisplayOptions);
+
+            if (selectedIndex < 0)
+                return;
 
             idProperty.intValue = cache.Ids[selectedIndex];
             nameProperty.stringValue = cache.Names[selectedIndex];
@@ -126,7 +163,7 @@ namespace LSH.Core.Editor
                 }
             }
 
-            return 0;
+            return -1;
         }
 
         private static void DrawFallback(
@@ -151,8 +188,10 @@ namespace LSH.Core.Editor
             EditorGUI.PropertyField(nameRect, nameProperty, label);
         }
 
-        private static Type FindSoundEnumType(SoundType kind)
+        private static Type[] FindSoundEnumTypes(SoundType kind)
         {
+            List<Type> matches = new();
+
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (assembly.IsDynamic)
@@ -177,11 +216,19 @@ namespace LSH.Core.Editor
                         continue;
 
                     if (attribute.Type == kind)
-                        return type;
+                        matches.Add(type);
                 }
             }
 
-            return null;
+            return matches
+                .OrderBy(type => type.FullName)
+                .ToArray();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void ClearCache()
+        {
+            _cacheByType.Clear();
         }
 
         private static Type[] GetTypesSafely(Assembly assembly)

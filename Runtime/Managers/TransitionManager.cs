@@ -18,8 +18,9 @@ namespace LSH.Core
         private SceneReference _fallbackScene;
 
         private bool _isTransitioning = false;
+        private bool _eventsSubscribed;
         private string _targetSceneName;
-        private Coroutine _fadeCoroutine;
+        private int _fadeVersion;
 
         public SceneReference FallbackScene => _fallbackScene;
 
@@ -30,8 +31,20 @@ namespace LSH.Core
 
         public void Init(ICoreBootstrapContext context)
         {
+            if (context == null || context.SceneSettings == null)
+            {
+                Debug.LogError("Core scene settings are not available.", this);
+                return;
+            }
+
             _loadingScene = context.SceneSettings.LoadingScene;
             _fallbackScene = context.SceneSettings.FallbackScene;
+
+            if (_loadingScene.IsEmpty)
+                Debug.LogWarning("Loading scene is empty.", this);
+
+            if (_fallbackScene.IsEmpty)
+                Debug.LogWarning("Fallback scene is empty.", this);
 
             if (_fadePanel != null)
             {
@@ -39,16 +52,15 @@ namespace LSH.Core
                 _fadePanel.blocksRaycasts = false;
             }
 
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            SceneLoader.OnLoadingCompleted += HandleLoadingCompleted;
+            SubscribeEvents();
         }
 
 
         /// <summary>
-        /// æ¿ ¿¸»Ø ≈Î«’ ∏ﬁº≠µÂ
+        /// Ïî¨ Ï†ÑÌôò ÌÜµÌï© Î©îÏÑúÎìú
         /// </summary>
-        /// <param name="targetScene">¿Ãµø«“ æ¿ ¿Ã∏ß</param>
-        /// <param name="useLoadingScene">∑Œµ˘ æ¿ ªÁøÎ ø©∫Œ (±‚∫ª∞™: true)</param>
+        /// <param name="targetScene">Ïù¥ÎèôÌï† Ïî¨ Ïù¥Î¶Ñ</param>
+        /// <param name="useLoadingScene">Î°úÎî© Ïî¨ ÏÇ¨Ïö© Ïó¨Î∂Ä (Í∏∞Î≥∏Í∞í: true)</param>
         public void LoadNextScene(SceneReference targetScene, bool useLoadingScene = true)
         {
             if (_isTransitioning) return;
@@ -59,9 +71,15 @@ namespace LSH.Core
                 return;
             }
 
+            if (useLoadingScene && _loadingScene.IsEmpty)
+            {
+                Debug.LogError("Loading scene is empty.", this);
+                return;
+            }
+
             _isTransitioning = true;
             _targetSceneName = targetScene.Value;
-            SceneLoader.TargetSceneName = targetScene.Value;
+            SceneLoader.TargetSceneName = useLoadingScene ? targetScene.Value : null;
 
             if (useLoadingScene)
                 StartCoroutine(SequenceWithLoading());
@@ -75,20 +93,45 @@ namespace LSH.Core
         {
             yield return StartCoroutine(Fade(1f));
 
-            SceneManager.LoadScene(_loadingScene);
+            if (!TryLoadScene(_loadingScene))
+            {
+                CancelTransition();
+                yield return StartCoroutine(Fade(0f));
+            }
         }
 
         private IEnumerator SequenceDirect()
         {
             yield return StartCoroutine(Fade(1f));
 
-            var op = SceneManager.LoadSceneAsync(_targetSceneName);
-            while (!op.isDone) yield return null;
+            AsyncOperation operation = null;
+
+            try
+            {
+                operation = SceneManager.LoadSceneAsync(_targetSceneName);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+
+            if (operation == null)
+            {
+                CancelTransition();
+                yield return StartCoroutine(Fade(0f));
+                yield break;
+            }
+
+            while (!operation.isDone)
+                yield return null;
 
         }
 
         private void HandleLoadingCompleted(SceneLoader loader)
         {
+            if (!_isTransitioning || loader == null)
+                return;
+
             StartCoroutine(SequenceToFinalTarget(loader));
         }
 
@@ -119,30 +162,30 @@ namespace LSH.Core
         {
             if (_fadePanel == null) yield break;
 
-            if (_fadeCoroutine != null)
+            int fadeVersion = ++_fadeVersion;
+
+            _fadePanel.blocksRaycasts = true;
+
+            if (_fadeDuration <= 0f)
             {
-                StopCoroutine(_fadeCoroutine);
+                _fadePanel.alpha = targetAlpha;
+                _fadePanel.blocksRaycasts = targetAlpha > 0f;
+                yield break;
             }
 
-            _fadeCoroutine = StartCoroutine(FadeRoutine(targetAlpha));
-
-            yield return _fadeCoroutine;
-
-            _fadeCoroutine = null;
-        }
-
-        private IEnumerator FadeRoutine(float targetAlpha)
-        {
-            _fadePanel.blocksRaycasts = true;
             float startAlpha = _fadePanel.alpha;
             float timer = 0f;
 
-            while (timer < _fadeDuration)
+            while (timer < _fadeDuration && fadeVersion == _fadeVersion)
             {
                 timer += Time.unscaledDeltaTime;
-                _fadePanel.alpha = Mathf.Lerp(startAlpha, targetAlpha, timer / _fadeDuration);
+                float progress = Mathf.Clamp01(timer / _fadeDuration);
+                _fadePanel.alpha = Mathf.Lerp(startAlpha, targetAlpha, progress);
                 yield return null;
             }
+
+            if (fadeVersion != _fadeVersion)
+                yield break;
 
             _fadePanel.alpha = targetAlpha;
 
@@ -152,10 +195,45 @@ namespace LSH.Core
 
         #endregion
 
+        private void SubscribeEvents()
+        {
+            if (_eventsSubscribed)
+                return;
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneLoader.OnLoadingCompleted += HandleLoadingCompleted;
+            _eventsSubscribed = true;
+        }
+
+        private void CancelTransition()
+        {
+            _isTransitioning = false;
+            _targetSceneName = null;
+            SceneLoader.TargetSceneName = null;
+        }
+
+        private bool TryLoadScene(SceneReference scene)
+        {
+            try
+            {
+                SceneManager.LoadScene(scene);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                return false;
+            }
+        }
+
         protected override void OnDestroy()
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneLoader.OnLoadingCompleted -= HandleLoadingCompleted;
+            if (_eventsSubscribed)
+            {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+                SceneLoader.OnLoadingCompleted -= HandleLoadingCompleted;
+                _eventsSubscribed = false;
+            }
 
             base.OnDestroy();
         }

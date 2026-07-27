@@ -93,6 +93,14 @@ namespace LSH.Core.Editor
 
             string[] enumNames = Enum.GetNames(enumType);
 
+            if (enumNames.Length == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"{enumType.FullName} does not define any scene values.",
+                    MessageType.Warning);
+                return;
+            }
+
             string[] sceneNames = enumNames
                 .Select(enumName => SceneNameUtility.From(enumType, enumName).ToString())
                 .ToArray();
@@ -101,12 +109,15 @@ namespace LSH.Core.Editor
 
             if (currentIndex < 0)
             {
-                currentIndex = 0;
+                EditorGUILayout.HelpBox(
+                    $"Stored scene '{valueProperty.stringValue}' is not defined by {enumType.Name}. Select a replacement.",
+                    MessageType.Warning);
             }
 
             int selectedIndex = EditorGUILayout.Popup(label, currentIndex, sceneNames);
 
-            valueProperty.stringValue = sceneNames[selectedIndex];
+            if (selectedIndex >= 0 && selectedIndex != currentIndex)
+                valueProperty.stringValue = sceneNames[selectedIndex];
         }
 
         private static Type[] FindSceneEnumTypes()

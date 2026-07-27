@@ -40,6 +40,12 @@ namespace LSH.Core
 
         public void Init(ICoreBootstrapContext context)
         {
+            if (context == null)
+            {
+                Debug.LogError("Core bootstrap context is null.", this);
+                return;
+            }
+
             Init(context.TimeChannels);
         }
 
@@ -72,7 +78,10 @@ namespace LSH.Core
             }
 
             if (_channels.ContainsKey(channelName))
+            {
+                Debug.LogWarning($"Time channel is already registered: {channelName}", this);
                 return;
+            }
 
             _channels.Add(channelName, new TimeChannel());
         }

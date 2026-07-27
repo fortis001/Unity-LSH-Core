@@ -26,7 +26,13 @@ namespace LSH.Core
         {
             if (_soundData == null)
             {
-                Debug.LogError("SoundData°¡ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!", this);
+                Debug.LogError("SoundDataê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!", this);
+                return;
+            }
+
+            if (_bgmSource == null || _sfxSource == null)
+            {
+                Debug.LogError("BGM ë° SFX AudioSourceë¥¼ ëª¨ë‘ í• ë‹¹í•´ì•¼ í•©ë‹ˆë‹¤.", this);
                 return;
             }
 
@@ -43,12 +49,13 @@ namespace LSH.Core
 
                 if (_sfxById.ContainsKey(entry.id.Id))
                 {
-                    Debug.LogWarning(
-                        $"Áßº¹µÈ SFX ID°¡ ÀÖ½À´Ï´Ù. id: {entry.id.Id}, name: {entry.id.Name}",
+                    Debug.LogError(
+                        $"ì¤‘ë³µëœ SFX IDê°€ ìˆìŠµë‹ˆë‹¤. id: {entry.id.Id}, name: {entry.id.Name}",
                         this);
+                    continue;
                 }
 
-                _sfxById[entry.id.Id] = entry;
+                _sfxById.Add(entry.id.Id, entry);
             }
 
             foreach (var entry in _soundData.bgmList)
@@ -58,12 +65,13 @@ namespace LSH.Core
 
                 if (_bgmById.ContainsKey(entry.id.Id))
                 {
-                    Debug.LogWarning(
-                        $"Áßº¹µÈ BGM ID°¡ ÀÖ½À´Ï´Ù. id: {entry.id.Id}, name: {entry.id.Name}",
+                    Debug.LogError(
+                        $"ì¤‘ë³µëœ BGM IDê°€ ìˆìŠµë‹ˆë‹¤. id: {entry.id.Id}, name: {entry.id.Name}",
                         this);
+                    continue;
                 }
 
-                _bgmById[entry.id.Id] = entry;
+                _bgmById.Add(entry.id.Id, entry);
             }
         }
 
@@ -71,7 +79,7 @@ namespace LSH.Core
         {
             if (soundId.IsEmpty)
             {
-                Debug.LogWarning("SFX ID°¡ ºñ¾î ÀÖ½À´Ï´Ù.", this);
+                Debug.LogWarning("SFX IDê°€ ë¹„ì–´ ìˆìŠµë‹ˆë‹¤.", this);
                 return;
             }
 
@@ -102,7 +110,7 @@ namespace LSH.Core
         {
             if (soundId.IsEmpty)
             {
-                Debug.LogWarning("BGM ID°¡ ºñ¾î ÀÖ½À´Ï´Ù.", this);
+                Debug.LogWarning("BGM IDê°€ ë¹„ì–´ ìˆìŠµë‹ˆë‹¤.", this);
                 return;
             }
 
@@ -141,7 +149,7 @@ namespace LSH.Core
             if (attribute == null)
             {
                 Debug.LogError(
-                    $"{enumType.Name}¿¡´Â [{nameof(SoundIdEnumAttribute)}]°¡ ºÙ¾î ÀÖ¾î¾ß ÇÕ´Ï´Ù.");
+                    $"{enumType.Name}ì—ëŠ” [{nameof(SoundIdEnumAttribute)}]ê°€ ë¶™ì–´ ìˆì–´ì•¼ í•©ë‹ˆë‹¤.");
                 return false;
             }
 
@@ -160,7 +168,7 @@ namespace LSH.Core
         {
             if (_sfxSource == null)
             {
-                Debug.LogError("SFX AudioSource°¡ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù.", this);
+                Debug.LogError("SFX AudioSourceê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.", this);
                 return;
             }
 
@@ -174,7 +182,7 @@ namespace LSH.Core
         {
             if (_bgmSource == null)
             {
-                Debug.LogError("BGM AudioSource°¡ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù.", this);
+                Debug.LogError("BGM AudioSourceê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.", this);
                 return;
             }
 

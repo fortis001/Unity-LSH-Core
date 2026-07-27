@@ -5,7 +5,14 @@ namespace LSH.Core
     public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
         private static T _instance;
-        private static bool _isApplicationQuitting = false;
+        private static bool _isApplicationQuitting;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _instance = null;
+            _isApplicationQuitting = false;
+        }
 
         public static T Instance
         {
@@ -40,7 +47,12 @@ namespace LSH.Core
         protected virtual void OnDestroy()
         {
             if (_instance == this)
-                _isApplicationQuitting = true;
+                _instance = null;
+        }
+
+        protected virtual void OnApplicationQuit()
+        {
+            _isApplicationQuitting = true;
         }
     }
 }

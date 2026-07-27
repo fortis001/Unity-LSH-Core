@@ -10,14 +10,33 @@ namespace LSH.Core
 
         public void Init()
         {
+            if (_actionAsset == null)
+            {
+                Debug.LogError("InputActionAsset is not assigned.", this);
+                return;
+            }
+
             _actionAsset.Enable();
         }
 
         public void SetActionMap(string mapName)
         {
+            if (_actionAsset == null)
+            {
+                Debug.LogError("InputActionAsset is not assigned.", this);
+                return;
+            }
+
             _currentMap?.Disable();
             _currentMap = _actionAsset.FindActionMap(mapName);
-            _currentMap?.Enable();
+
+            if (_currentMap == null)
+            {
+                Debug.LogWarning($"Input action map was not found: {mapName}", this);
+                return;
+            }
+
+            _currentMap.Enable();
         }
 
         public InputAction GetAction(string actionName)
@@ -25,7 +44,9 @@ namespace LSH.Core
 
         protected override void OnDestroy()
         {
-            _actionAsset.Disable();
+            if (_actionAsset != null)
+                _actionAsset.Disable();
+
             base.OnDestroy();
         }
     }

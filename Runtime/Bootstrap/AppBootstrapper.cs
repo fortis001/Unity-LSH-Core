@@ -1,4 +1,4 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -13,26 +13,60 @@ namespace LSH.Core
 
         private ICoreBootstrapContext _context;
 
-        private IEnumerator Start()
+        private void Start()
         {
             if (!TryGetContext())
-                yield break;
+                return;
 
-            foreach (var obj in _managerObjects)
+            if (_managerObjects == null)
             {
-                if (obj is IBootableWithContext contextBootable)
+                Debug.LogError("Core manager list is not assigned.", this);
+                return;
+            }
+
+            bool initializationFailed = false;
+
+            foreach (MonoBehaviour obj in _managerObjects)
+            {
+                if (obj == null)
                 {
-                    contextBootable.Init(_context);
+                    Debug.LogError("Core manager list contains a missing reference.", this);
+                    initializationFailed = true;
                     continue;
                 }
 
-                if (obj is IBootable bootable)
+                try
                 {
-                    bootable.Init();
+                    if (obj is IBootableWithContext contextBootable)
+                    {
+                        contextBootable.Init(_context);
+                        continue;
+                    }
+
+                    if (obj is IBootable bootable)
+                    {
+                        bootable.Init();
+                        continue;
+                    }
+
+                    Debug.LogWarning(
+                        $"{obj.name} does not implement a supported bootable interface.",
+                        obj);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, obj);
+                    initializationFailed = true;
                 }
             }
 
-            yield return new WaitForSeconds(0.2f);
+            if (initializationFailed)
+            {
+                Debug.LogError(
+                    "Core initialization failed. Entry scene loading was cancelled.",
+                    this);
+                return;
+            }
 
             FinishInitialization();
         }
@@ -53,7 +87,22 @@ namespace LSH.Core
 
         private void FinishInitialization()
         {
-            SceneReference targetScene = _context.SceneSettings.EntryCompleteScene;
+            CoreSceneSettings sceneSettings = _context.SceneSettings;
+
+            if (sceneSettings == null)
+            {
+                Debug.LogError("Core scene settings are not assigned.", this);
+                return;
+            }
+
+            SceneReference targetScene = sceneSettings.EntryCompleteScene;
+
+            if (targetScene.IsEmpty)
+            {
+                Debug.LogError("Entry complete scene is empty.", sceneSettings);
+                return;
+            }
+
             SceneManager.LoadScene(targetScene);
         }
     }

@@ -3,5 +3,9 @@
   "version": "1.0.0",
   "displayName": "LSH Core",
   "description": "Reusable core systems for Unity projects",
-  "unity": "6000.0"
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.inputsystem": "1.19.0",
+    "com.unity.ugui": "2.0.0"
+  }
 }
